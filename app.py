@@ -53,7 +53,7 @@ def get_conversations():
 
     conversations_data = [{
         "group": time_group(conv.created),
-        "id": conv.id, 
+        "id": conv.id,
         "title": conv.title_str,
         "created": conv.created_str,
         "total_length": human_readable_time(conv.total_length, short=True),
@@ -78,15 +78,15 @@ def get_messages(conv_id: str):
         # If there's a previous message and the time difference is 1 hour or more
         if prev_created and (msg.created - prev_created).total_seconds() >= 3600:
             delta = msg.created - prev_created
-            time_str = human_readable_time(delta.total_seconds())            
+            time_str = human_readable_time(delta.total_seconds())
             messages.append({
-                "text": f"{time_str} passed", 
+                "text": f"{time_str} passed",
                 "role": "internal"
                 })
 
         messages.append({
             "text": markdown(msg.text),
-            "role": msg.role, 
+            "role": msg.role,
             "created": msg.created_str
         })
 
@@ -108,7 +108,7 @@ def get_activity():
         for message in conversation.messages:
             day = message.created.date()
             activity_by_day[day] += 1
-    
+
     activity_by_day = {str(k): v for k, v in sorted(dict(activity_by_day).items())}
 
     return JSONResponse(content=activity_by_day)
@@ -133,7 +133,7 @@ def get_statistics():
         min_length = max_length = avg_length = "N/A"
 
     # Generate links for the top 3 longest conversations
-    top_3_links = "".join([f"<a href='https://chat.openai.com/c/{l[1]}' target='_blank'>Chat {chr(65 + i)}</a><br/>" 
+    top_3_links = "".join([f"<a href='https://chat.openai.com/c/{l[1]}' target='_blank'>Chat {chr(65 + i)}</a><br/>"
                    for i, l in enumerate(lengths[:3])])
 
     # Get the last chat message timestamp and backup age
@@ -160,7 +160,7 @@ def get_ai_cost():
             token_count = msg.count_tokens()
 
             if msg.role == "user":
-                tokens_by_month[year_month]['input'] += openai_api_cost(msg.model_str, 
+                tokens_by_month[year_month]['input'] += openai_api_cost(msg.model_str,
                                                                         input=token_count)
             else:
                 tokens_by_month[year_month]['output'] += openai_api_cost(msg.model_str,
@@ -205,14 +205,14 @@ def search_conversations(query: str = Query(..., min_length=3, description="Sear
 
     if OPENAI_ENABLED and not query_exact:
         for _id in search_similar(query, embeddings_ids, embeddings_index):
-            conv = find_conversation_by_id(conversations, embeddings[_id]["conv_id"])            
+            conv = find_conversation_by_id(conversations, embeddings[_id]["conv_id"])
             if conv:
                 result_type = embeddings[_id]["type"]
                 if result_type == TYPE_CONVERSATION:
                     msg = conv.messages[0]
                 else:
                     msg = find_message_by_id(conv.messages, _id)
-                
+
                 if msg:
                     add_search_result(search_results, result_type, conv, msg)
     else:
@@ -225,7 +225,7 @@ def search_conversations(query: str = Query(..., min_length=3, description="Sear
                 if msg and msg.text.lower().find(query_lower) != -1:
                     add_search_result(search_results, "message", conv, msg)
 
-            if len(search_results) >= 10:
+            if len(search_results) >= 100:
                 break
 
     return JSONResponse(content=search_results)
@@ -237,11 +237,11 @@ def search_conversations(query: str = Query(..., min_length=3, description="Sear
 def toggle_favorite(conv_id: str):
     conn = connect_settings_db()
     cursor = conn.cursor()
-    
+
     # Check if the conversation_id already exists in favorites
     cursor.execute("SELECT is_favorite FROM favorites WHERE conversation_id = ?", (conv_id,))
     row = cursor.fetchone()
-    
+
     if row is None:
         # Insert new entry with is_favorite set to True
         cursor.execute("INSERT INTO favorites (conversation_id, is_favorite) VALUES (?, ?)", (conv_id, True))
@@ -250,10 +250,10 @@ def toggle_favorite(conv_id: str):
         # Toggle the is_favorite status
         is_favorite = not row[0]
         cursor.execute("UPDATE favorites SET is_favorite = ? WHERE conversation_id = ?", (is_favorite, conv_id))
-    
+
     conn.commit()
     conn.close()
-    
+
     return {"conversation_id": conv_id, "is_favorite": is_favorite}
 
 

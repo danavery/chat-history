@@ -10,8 +10,8 @@ TYPE_CONVERSATION = "conversation"
 TYPE_MESSAGE = "message"
 
 
-def get_embedding(text):
-    return openai.Embedding.create(input=text, 
+def get_embedding(text, max_len=8192):
+    return openai.Embedding.create(input=text[:max_len],
                                    model="text-embedding-ada-002"
                                    )["data"][0]["embedding"]
 
@@ -77,7 +77,7 @@ def load_create_embeddings(path: str, conversations):
 
             for msg in conv.messages:
                 if msg and msg.text and msg.id not in embeddings:
-                    
+
                     record = {
                         "type": TYPE_MESSAGE,
                         "conv_id": conv.id,
@@ -99,7 +99,7 @@ def load_create_embeddings(path: str, conversations):
         index = faiss.IndexFlatL2(d)
         index.add(embeddings_np)
         return index, embeddings_ids
-    
+
     db_conn = connect_db(path)
 
     embeddings = load_embeddings(db_conn)
@@ -119,7 +119,7 @@ def load_create_embeddings(path: str, conversations):
     return embeddings, embeddings_ids, embeddings_index
 
 
-def search_similar(query, embeddings_ids, embeddings_index, top_n=10):
+def search_similar(query, embeddings_ids, embeddings_index, top_n=100):
     query_embedding = get_embedding(query)
     query_vector = np.array(query_embedding).astype('float32').reshape(1, -1)
     _, indices = embeddings_index.search(query_vector, top_n)
@@ -166,7 +166,7 @@ def openai_api_cost(model, input=0, output=0):
                 model_pricing = pricing["gpt-3.5-turbo-4k"]
         else:
             model_pricing = pricing["gpt-3.5-turbo-4k"]
-        
+
     if input > 0:
         return model_pricing["prompt"] * input / 10 # in cents
     elif output > 0:

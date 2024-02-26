@@ -24,7 +24,7 @@ class ContentPart(BaseModel):
     size_bytes: Optional[int]
     width: Optional[int]
     height: Optional[int]
-    fovea: Optional[None]
+    fovea: Optional[int]
     metadata: Optional[ContentPartMetadata]
 
 
@@ -52,12 +52,12 @@ class Message(BaseModel):
         if self.content:
             if self.content.text:
                 return self.content.text
-            elif self.content.content_type == 'text' and self.content.parts: 
+            elif self.content.content_type == 'text' and self.content.parts:
                 return " ".join(str(part) for part in self.content.parts)
             elif self.content.content_type == 'multimodal_text':
                 return "[TODO: process DALL-E and other multimodal]"
         return ""
-    
+
     @property
     def role(self) -> str:
         return self.author.role
@@ -69,11 +69,11 @@ class Message(BaseModel):
     @property
     def created_str(self) -> str:
         return self.created.strftime('%Y-%m-%d %H:%M:%S')
-    
+
     @property
     def model_str(self) -> str:
         return self.metadata.model_slug or DEFAULT_MODEL_SLUG
-    
+
     def count_tokens(self) -> int:
         try:
             encoding = tiktoken.encoding_for_model(self.model_str)
